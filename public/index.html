@@ -1,0 +1,84 @@
+<!doctype html>
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Web Application</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+    <link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="/libs/outdatedbrowser/outdatedBrowser.min.css">
+
+  </head>
+  <body>
+    <!--[if lt IE 9]>
+		    <script src="/libs/html5shiv.js"></script>
+        <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+
+    <div id="maina" class="container">
+      <div id="main-nav"></div>
+      <div id="content"></div>
+    </div>
+
+    <script src="/libs/outdatedbrowser/outdatedBrowser.min.js"></script>
+
+    <script src="/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="/libs/jquerypp.js"></script>
+    <script src="/bower_components/canjs/can.jquery.dev.js"></script>
+    <script src="/bower_components/canjs/can.map.define.js"></script>
+    <script src="/bower_components/canjs/can.list.promise.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/libs/can.feathers.js"></script>
+    <script src="/bower_components/jquery-cookie/jquery.cookie.js"></script>
+
+    <script src="/assets/main.mustache.js"></script>
+    <script src="/assets/main.js"></script>
+
+    <!-- <script src="/bower_components/steal/steal.js"
+      data-main="main"
+      data-dist-path="bundles"
+      data-config="./stealconfig.js"
+      data-env="development"></script> -->
+
+	  <div id="outdated">
+	       <h6>Your browser is out-of-date!</h6>
+	       <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update my browser now </a></p>
+	       <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+	  </div>
+	  <script type="text/javascript">
+	  	//PLAIN JAVASCRIPT
+	  	//event listener form DOM ready
+	  	function addLoadEvent(func) {
+	  	    var oldonload = window.onload;
+	  	    if (typeof window.onload != 'function') {
+	  	        window.onload = func;
+	  	    } else {
+	  	        window.onload = function() {
+	  	            oldonload();
+	  	            func();
+	  	        }
+	  	    }
+	  	}
+	  	//call plugin function after DOM ready
+	  	addLoadEvent(
+	  	    outdatedBrowser({
+	  	        bgColor: '#f25648',
+	  	        color: '#ffffff',
+	  	        lowerThan: 'transform'
+	  	    })
+	  	    );
+
+	  	//USING jQuery
+	  	$( document ).ready(function() {
+	  	    outdatedBrowser({
+	  	        bgColor: '#f25648',
+	  	        color: '#ffffff',
+	  	        lowerThan: 'transform'
+	  	    })
+	  	})
+	  </script>
+  </body>
+</html>
