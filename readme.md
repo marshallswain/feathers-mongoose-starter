@@ -1,4 +1,4 @@
-## Feathers server with Steal and CanJS on the client
+## FeathersJS server with Gulp/Webpack and CanJS
 
 
 ### What's Included
