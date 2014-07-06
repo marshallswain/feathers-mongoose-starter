@@ -5,13 +5,12 @@ module.exports = function(app, feathers){
 	app.configure(feathers.socketio(function(io) {
 
 		io.set('transports', [
-	      'websocket'
+			'websocket'
 	  ]);
 
 		/* * * Place for custom events * * */
 	  io.on('connection', function(socket) {
 	    socket.broadcast.emit('news', { hello: 'world' });
-
 	  });
 
 

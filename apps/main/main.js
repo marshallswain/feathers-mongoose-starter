@@ -1,21 +1,30 @@
 'use strict';
 
+import './main.css';
+
 import Session from './models/session';
-import './components/login/login.js';
+
+
+import './components/auth/auth.js';
+
 import './components/home/home.js';
-import './components/jquery-ui/jquery-ui.js';
 import './components/secrets/secrets.js';
 import './components/todos/todos.js';
+import './components/tickets/tickets.js';
 
 // Everything revolves around the appState.
 import appState from './appState.js';
 
-// Setup route.
+// Routes
+can.route('passwordemail/:email',{page: 'passwordemail'});
+can.route('passwordchange/:secret',{page: 'passwordchange'});
+can.route('verify/:secret',{page: 'verify'});
 can.route(':page',{page: 'home'});
 
 
 // Register Mustache Helper
-can.mustache.registerHelper('linkTo', (page) => can.mustache.safeString(can.route.link(page,{page: page}))  );
+can.mustache.registerHelper('linkTo', (page) => can.mustache.safeString(can.route.link(page,{page: page})) );
+can.mustache.registerHelper('hrefTo', (page) => can.mustache.safeString(can.route.url({page: page})) );
 
 $(document.body).append( can.view('/apps/main/site.mustache', appState) );
 
@@ -33,7 +42,6 @@ appState.bind('showPage', (ev, newVal) => {
 Session.findOne({}).then(
 	// Successful token login
 	(session) => {
-		console.log(session);
 		appState.attr({
 			session: session,
 			ready : true
@@ -42,7 +50,6 @@ Session.findOne({}).then(
 	},
 	// Failed token login.
 	() => {
-		console.log('2');
 		appState.attr('ready', true);
 		can.route.ready();
 	});

@@ -3,7 +3,8 @@ var mongoose = require('mongoose'),
   MongooseService = require('feathers-mongoose-advanced'),
   SALT_WORK_FACTOR = 10,
   bcrypt = require('bcrypt'),
-  hooks = require("../hook-filters");
+  hooks = require('../hook-library'),
+  events = require('../event-library');
 
 var schema = new mongoose.Schema({
   email: {type: String, required: true, unique: true },
@@ -23,7 +24,7 @@ schema.virtual('id').get(function(){
 schema.set('toJSON', {virtuals: true});
 schema.set('toObject', {virtuals: true});
 
-// Bcrypt middleware
+// Bcrypt middleware will work for all actions except update.
 schema.pre('save', function(next) {
   var user = this;
 
@@ -57,39 +58,30 @@ module.exports = function(app){
 
   var service = app.lookup(serviceURL);
 
+  // Before hooks
   service.before({
-    // find:   hooks.requireAuth,
+    find:   hooks.requireAuth,
+    create: hooks.requireAdminToSetAdmin,
     get:    hooks.requireAuth,
     update: hooks.requireAuth,
     remove: hooks.requireAuth
   });
 
   service.before({
-    create:   hooks.requireAdminToSetAdmin
+    create: hooks.setSecret,
+    update: hooks.encryptPassword
   });
 
   service.before({
-    create:   hooks.setSecret
+    create: hooks.lowercaseEmail,
+    update: hooks.lowercaseEmail
   });
 
+  // After hooks
   service.after({
     create:   hooks.sendVerificationEmail
   });
 
-  // service.after({
-  //   find: function (hook, next) {
-  //     // if (!hook.params.user) {
-  //     //   return next(new Error('You are not logged in'));
-  //     // }
-  //     // console.log(hook);
-  //     next();
-  //   },
-
-  //   create: function(hook, next) {
-  //     hook.data.createdAt = new Date();
-
-  //     next();
-  //   }
-  // });
-
+  /* * * Filter socket announcements * * */
+  service.created = service.updated = service.patched = service.removed = events.requireAuth;
 };

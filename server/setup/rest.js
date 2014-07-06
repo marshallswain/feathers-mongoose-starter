@@ -1,5 +1,4 @@
-var bodyParser = require('body-parser'),
-	decodeToken = require('./auth').decodeToken;
+var bodyParser = require('body-parser');
 
 module.exports = function(app, feathers){
 

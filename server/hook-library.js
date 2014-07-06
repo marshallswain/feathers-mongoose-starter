@@ -1,3 +1,8 @@
+'use strict';
+
+var bcrypt = require('bcrypt'),
+ SALT_WORK_FACTOR = 10;
+
 /**
  *
  * A Library of Useful Hooks for FeathersJS
@@ -24,6 +29,49 @@ exports.requireAuth = function (hook, next) {
     return next(new errors.NotAuthenticated('Please include a valid auth token in the Authorization header.'));
   }
 
+  return next(null, hook);
+};
+
+
+/**
+ * Encrypt password update
+ * If data.updatePassword is set, encrypt and save the password.
+ *
+ * update
+ */
+exports.encryptPassword = function (hook, next) {
+
+
+  // Allow user to view records without a userID.
+  if (hook.data.updatePassword && hook.data.password) {
+
+    bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt) {
+      if (err) return next(err);
+
+      bcrypt.hash(hook.data.password, salt, function(err, hash) {
+        if (err) return next(err);
+        hook.data.password = hash;
+        return next(null, hook);
+      });
+    });
+  } else {
+    delete hook.data.password;
+    return next(null, hook);
+  }
+};
+
+/**
+ * lowercaseEmail
+ * If email is passed in, lowercase it for consistent logins.
+ *
+ * update
+ */
+exports.lowercaseEmail = function (hook, next) {
+
+  // Allow user to view records without a userID.
+  if (hook.data.email) {
+    hook.data.email = hook.data.email.toLowerCase();
+  }
   return next(null, hook);
 };
 
@@ -93,7 +141,7 @@ exports.requireAdminToSetAdmin = function(hook, next){
  */
 exports.setSecret = function(hook, next){
 
-  // In the case that this isn't an administrator creating the record...
+  // If not created by an admin...
   if (!(hook.params.user && hook.params.user.admin)) {
 
     // add a secret to the data.
@@ -118,19 +166,28 @@ exports.sendVerificationEmail = function(hook, next){
   if (!(hook.params.user && hook.params.user.admin)) {
 
     var protocol = 'http';
-    // if (req.headers['x-forwarded-proto'] == 'https') {
-      // protocol = 'https';
-    // }
+    if (hook.params.headers['x-forwarded-proto'] == 'https') {
+      protocol = 'https';
+    }
 
-    var body = 'Click here to verify your email address: \n '+ protocol +'://localhost/#!login/verify/' + hook.data.secret;
+    var url = protocol +'://'+hook.params.headers.host+'/#!verify';
+
+    var body = 'Click here to verify your email address: '+ url + '/' + hook.data.secret +
+    '\n\n or go to this page: '+ url +
+    '\n\n and enter this code: ' + hook.data.secret;
 
     // Send an email
     postmark.send({
-      'From': 'support@brycecanyonhalfmarathon.com',
+      'From': 'xxx',
       'To': hook.data.email,
-      'Subject': 'Verify Your Account',
+      'Subject': 'Verify Your Email Address',
       'TextBody': body
+    }, function(error, success) {
+      if(error) {
+        console.error('Unable to send via postmark: ' + error.message);
+      }
     });
+
   }
 
   return next();

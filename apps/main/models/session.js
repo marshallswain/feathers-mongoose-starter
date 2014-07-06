@@ -16,6 +16,7 @@ export default can.Model.extend('Session', {
 			can.ajax({
 			  url: '/api/tokenlogin',
 			  type: 'POST',
+			  dataType:'json',
 			  data: {token:token}
 			}).then(function(response){
 
@@ -32,6 +33,8 @@ export default can.Model.extend('Session', {
 		}
 		return d;
 	},
+
+	// Login with username and password.
 	create: function(data){
 		var d = new can.Deferred();
 		if(data.email && data.password) {
@@ -39,21 +42,25 @@ export default can.Model.extend('Session', {
 			can.ajax({
 			  url: '/api/login',
 			  type: 'POST',
+			  dataType:'json',
 			  data: {email:data.email, password:data.password}
-			}).then(function(response){
+			}).then(
+				(response) => {
 
-				if (response.error) {
-					d.reject(response);
-			  // ... resolve with the user.
-				} else {
-
-					localStorage.setItem('featherstoken', response.token);
-				  d.resolve(response);
-				}
-			});
+					if (response.message) {
+						d.reject(response);
+				  // ... resolve with the user.
+					} else {
+						localStorage.setItem('featherstoken', response.token);
+					  d.resolve(response);
+					}
+				}, ()=>{
+					console.log(arguments);
+					d.reject(arguments);
+				});
 
 		} else {
-			d.reject({message: 'incorrect username or password'});
+			d.reject({error: 'incorrect username or password'});
 		}
 		return d;
 	},

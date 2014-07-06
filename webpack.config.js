@@ -4,7 +4,7 @@ var webpack = require('webpack');
 module.exports = {
 	cache: true,
   entry: {
-    main: './apps/main/main.js',
+    main: './apps/main/main.js'
   },
   output: {
     path: __dirname + '/public/assets',

@@ -12,8 +12,8 @@
 var mongoose = require('mongoose'),
   ObjectId = mongoose.Schema.Types.ObjectId,
   MongooseService = require('feathers-mongoose-advanced'),
-  hooks = require('../hook-filters'),
-  events = require('../event-filters');
+  hooks = require('../hook-library'),
+  events = require('../event-library');
 
 
 /* * * Create your schema * * */

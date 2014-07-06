@@ -1,10 +1,12 @@
+'use strict';
+
 /**
- * Secrets Service
+ * Tickets Service
  * ------------------
  *
  * Security Overview:
  * No Public Access.
- * Users can see and edit their own secrets.
+ * Users can see and edit their own tickets.
  *
  */
 
@@ -17,7 +19,8 @@ var mongoose = require('mongoose'),
 
 /* * * Create your schema * * */
 var schema = new mongoose.Schema({
-  description: String,
+  body: String,
+  status: String,
   userID: ObjectId
 });
 
@@ -35,9 +38,9 @@ module.exports = function(app){
 
 
   /* * * Set up the url for this service * * */
-  var url = 'api/secrets';
+  var url = 'api/tickets';
 
-  app.use(url, new MongooseService( mongoose.model('Secret', schema) ));
+  app.use(url, new MongooseService( mongoose.model('Ticket', schema) ));
 
   var service = app.lookup(url);
 

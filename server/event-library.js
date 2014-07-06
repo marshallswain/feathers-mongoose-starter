@@ -7,7 +7,14 @@
 
 /* Require Auth */
 exports.requireAuth = function(data, params, callback){
-  if (params && params.user && data.userID) {
+  if (params.user && data.userID) {
+
+  	// Admins get notifications
+  	if (params.user.admin) {
+	    callback(null, data);
+  	}
+
+  	// User gets own notifications
   	if (params.user._id == data.userID) {
 	    callback(null, data);
   	}
@@ -22,7 +29,7 @@ exports.requireAuthForPrivate = function(data, params, callback){
 	if (data.userID) {
 
 		// If the user is logged in, allow the event.
-		if (params && params.user) {
+		if (params && params.user && params.user._id == data.userID) {
 		  callback(null, data);
 		}
 

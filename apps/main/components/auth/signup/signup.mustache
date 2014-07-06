@@ -1,0 +1,39 @@
+<div class="col-md-6 col-md-offset-3">
+  <form id="signupform" class="form-signin" role="form">
+  <h2>Email Signup</h2>
+
+  <div id="signup-email-error-message"> </div>
+
+    <p>Enter &amp; confirm your email address.</p>
+    <div>
+      <input can-value="user.email" type="text" class="form-control top" placeholder="email" required="" autofocus="">
+      <input can-value="user.email2" type="text" class="form-control bottom" placeholder="email again" required="">
+      <div class="signup-messages {{#if emailMismatch}}bg-danger{{/if}} {{#if emailTaken}}bg-danger{{/if}}">
+        {{#if emailMismatch}}
+          <p>Email addresses do not match.</p>
+        {{/if}}
+
+        {{#if emailTaken}}
+          <p>That email address is already in use.</p>
+        {{/if}}
+      </div>
+    </div>
+
+    <br/>
+    <p>Enter &amp; confirm your password.</p>
+    <div>
+      <input can-value="user.password" type="password" class="form-control top" placeholder="password" required="" minlength="6">
+      <input can-value="user.password2" type="password" class="form-control bottom" placeholder="password again" required="" minlength="6">
+
+      <div class="signup-messages bg-danger">
+        {{#if passwordMismatch}}
+          <p>Passwords do not match.</p>
+        {{/if}}
+      </div>
+    </div>
+
+		<br/>
+    <button class="btn btn-lg btn-success btn-block" can-click="signup">Create Account</button>
+    <a href="{{hrefTo 'login'}}" class="btn btn-block btn-link cancel">Already signed up? Login</a>
+  </form>
+</div>

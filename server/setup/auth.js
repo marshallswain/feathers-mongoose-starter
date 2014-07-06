@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Contains all of the functions necessary to deal with Authentication.
  *
@@ -6,16 +8,17 @@
  * 3. Login
  */
 
-
-var bcrypt = require('bcrypt');
-var jwt = require('jwt-simple');
-var randomString = require('random-string');
-var postmark = require('postmark')('postmark-key-here');
+var bcrypt = require('bcrypt'),
+	jwt = require('jwt-simple'),
+	randomString = require('random-string'),
+	mongoose = require('mongoose'),
+	winston = require('winston'),
+	postmark = require('postmark')('postmark-key-here');
 
 /**
  * The secret that will be used to encode / decode tokens.
  */
-var secret = 'igottasecret';
+var tokenSecret = 'igottasecret';
 
 
 /**
@@ -23,11 +26,11 @@ var secret = 'igottasecret';
  */
 exports.decodeToken = function(token, cb){
 	try{
-	  var data = jwt.decode(token, secret);
+	  var data = jwt.decode(token, tokenSecret);
 	  cb(null, data);
 	}
 	catch(e){
-		console.log(e);
+		winston.log('auth.js line ~33 decodeToken error: ~~~~~~~' + e);
 		cb(e, null);
 	}
 };
@@ -47,10 +50,19 @@ var getToken = function(req, res, next){
 			}
 		});
 	} else {
-		console.log('no token/user in getToken');
 		next(null, req, res);
 	}
 };
+
+/**
+ * Middleware to set up req.headers on req.feathers.headers.
+ * Can then be used in hooks
+ */
+var setHeaders = function(req, res, next){
+	req.feathers.headers = req.headers;
+	next(null, req, res);
+};
+
 
 /**
  * Pass in a mongoose user document and get back a token with the user data..
@@ -67,25 +79,27 @@ exports.generateToken = function(user){
   var tokenUser = {
 		email: user.email,
 		_id: user._id,
-		admin: isAdmin
+		admin: isAdmin,
+		date: new Date().getTime()
   };
 
   // Prepare the user.
   delete user.password;
 
-  var token = jwt.encode(tokenUser, secret);
+  user.token = jwt.encode(tokenUser, tokenSecret);
 
-  return {token:token, user:user};
+  return user;
 };
 
 
 /**
- * These set up the express app.
+ * Set up the custom REST routes.
  */
 exports.setup = function(app, feathers){
 
 	// All REST routes will set up req.feathers.user if a token is passed.
-	app.all('*', getToken);
+	app.all('*', setHeaders);
+	app.post('*', getToken);
 
 
 	/**
@@ -93,173 +107,297 @@ exports.setup = function(app, feathers){
 	 */
 	app.post('/api/login', function(req, res){
 
-		var params = {
-			query:{
-				email:req.body.email.toLowerCase()
-			}
-		};
+		var User = mongoose.models.User;
 
-		app.lookup('api/users').find(params, function(error, users){
+		User.find({email:req.body.email.toLowerCase()}, '', {}, function(err, users){
+			// Mongoose Errors
+			if (err) {
+				winston.log(err);
+				res.json('401', err);
 
-			// If we got data back...
-			if (users[0]) {
+			// User found
+			} else if(users[0]){
 
 				// Use the first, and only, matching user.
 				var user = users[0];
 
-				// User exists, let's compare the password.
-				bcrypt.compare(req.body.password, user.password, function(err, isMatch) {
+				// If user isn't verified, send message.
+				if (user.verified === false) {
 
-					// Error checking the password.
-					if (err) return res.json(err);
+					var secret;
 
-					// Passwords matched, so send a token.
-					if (isMatch) {
-	          var token = exports.generateToken(user);
-			      return res.json(token);
+					// If a secret isn't set and the account isn't verified, set up a new secret and send it out.
+					// otherwise the original secret will remain and be sent in the verification email.
+					if (!user.secret) {
+						secret = user.secret = randomString();
 
-			    // Passwords didn't match.
+						// Update the user in the db with the newly-set secret.
+						user.save(function(err, user){});
 					} else {
-						return res.json({
-							error: 'Invalid Login'
-						});
+						secret = user.secret;
 					}
-				});
 
-			// User not found
+					// Resend verification email.
+					var protocol = 'http';
+					if (req.headers['x-forwarded-proto'] == 'https') {
+						protocol = 'https';
+					}
+					var url = protocol +'://'+req.headers.host+'/#!verify';
+
+			    var body = 'Click here to verify your email address: \n '+ url + '/' + secret +
+			    '\n\n or go to this page: '+ url +
+			    '\n\n and enter this code: ' + secret;
+
+					// Send an email
+					postmark.send({
+						'From': 'xxx',
+						'To': user.email,
+						'Subject': 'Verify Your Email Address',
+						'TextBody': body
+			    }, function(error, success) {
+		        if(error) {
+							winston.log('Unable to send via postmark: ' + error.message);
+		        }
+			    });
+
+					res.json({
+						status:'not verified',
+						message:'That account has not been verified. Please check your email to verify your address.'
+					});
+
+
+
+				// Account already verified
+				} else {
+					// Compare the password.
+					bcrypt.compare(req.body.password, user.password, function(err, isMatch) {
+
+						// Error checking the password.
+						if (err){
+							return res.json(err);
+
+						// No check-password errors
+						} else {
+							// Passwords matched, so send a token.
+							if (isMatch) {
+			          var token = exports.generateToken(user);
+					      return res.json(token);
+
+					    // Passwords didn't match.
+							} else {
+								return res.json({
+									status:'invalid login',
+									message: 'Invalid Login'
+								});
+							}
+						}
+					});
+				}
+
+			// User not found.
 			} else {
 				return res.json({
-					error: 'Invalid Login'
+					status:'invalid login',
+					message: 'Invalid Login'
+				});
+			}
+		});
+
+
+	});
+
+	/**
+	 * Verify a user's account by passing a secret.
+	 */
+	app.post('/api/verify', function(req, res){
+		var User = mongoose.models.User;
+
+		User.find({secret:req.body.secret}, '', {}, function(err, users){
+			// Mongoose Errors
+			if (err) {
+				winston.log(err);
+				res.json('401', err);
+
+			// User found
+			} else if (users[0]) {
+				var user = users[0];
+				user.secret = undefined;
+				user.verified = true;
+				// Update the user and send back the credentials.
+				user.save(function(err, user){
+					if (err) {
+						winston.log(err);
+						res.json(err);
+					} else{
+	          // ...and send the token to the user.
+            var token = exports.generateToken(user);
+  		      return res.json(token);
+					}
+				});
+			// Couldn't find a user with that secret.
+			} else {
+				res.json({
+					status:'invalid secret',
+					message: 'We couldn\'t find a user with that secret.'
 				});
 			}
 		});
 	});
+
 
 
 	/**
 	 * POST token.
 	 */
 	app.post('/api/tokenlogin', function(req, res){
-
-		// If there's no token, let the client know.
+		// If there's no token, send error.
 		if (!req.body.token) {
-			res.json({error:'token is required for token login.'});
+			res.json({
+				status: 'no token',
+				message:'token is required for token login.'
+			});
 
-		// If there's a token...
+		// If there's a token, decode it.
 		} else {
-
-			// decode it.
 			exports.decodeToken(req.body.token, function(err, data){
-
 				// If there was an error decoding the token.
 				if (err) {
 					res.json({error:'Could not decode token. Please login.'});
-
 				// If the token didn't contain any user data...
 				} else if (!data.email) {
 					res.json({error:'Invalid token. Please login.'});
-
 				// If the decode was successful...
 				} else {
-
 					// Check that the token hasn't expired... TODO: Implement expiring tokens.
 					res.json(data);
+				}
+			});
+		}
+	});
+
+	app.post('/api/passwordemail', function(req, res){
+
+		if (!req.body.email) {
+			return res.json({
+				status: 'email required',
+				message: 'Please pass an email address to send a password reset request.'
+			});
+		} else {
+
+			var User = mongoose.models.User;
+
+			User.find({email:req.body.email.toLowerCase()}, '', {}, function(err, users){
+				// Mongoose Errors
+				if (err) {
+					winston.log(err);
+					return res.json('401', err);
+
+				// A user was found, create a secret and send a password change request.
+				} else if (users[0]) {
+					var user = users[0];
+
+					var secret;
+
+					if (!user.secret) {
+						secret = user.secret = randomString();
+					} else {
+						secret = user.secret;
+					}
+					// Update the user and send back the credentials.
+					user.save(function(err, user){
+
+						// Resend verification email.
+						var protocol = 'http';
+						if (req.headers['x-forwarded-proto'] == 'https') {
+							protocol = 'https';
+						}
+						var url = protocol +'://'+req.headers.host+'/#!passwordchange';
+
+						var body = 'Click here to change your password: \n '+ url + '/' + secret +
+						'\n\n or go to this page: '+ url +
+						'\n\n and enter this code: ' + secret;
+
+						// Send an email
+						postmark.send({
+							'From': 'xxx',
+							'To': user.email,
+							'Subject': 'Password Change Request',
+							'TextBody': body
+				    });
+
+						return res.json('success');
+					});
+
+				// No user was found.
+				} else {
+					return res.json({
+						status: 'User Not Found',
+						message: 'Could not find a user with that email address.'
+					});
 
 				}
 			});
-
 		}
 
 
-	});
-
-	app.post('/api/changepasswordrequest', function(req, res){
-
-		var params = {
-			query:{
-				email:req.body.email.toLowerCase()
-			}
-		};
-
-		var User = app.lookup('api/users');
-
-		User.find(params, function(error, users){
-
-			// No user was found.
-			if (!users[0]) {
-				return res.json({
-					error: 'User Not Found'
-				});
-
-			// A user was found, send change password request.
-			} else {
-				var user = users[0].toObject();
-				user.secret = randomString();
-
-				// Save the secret to the user.
-				User.update(user.id, user, {}, function(err, user){
-
-					var protocol = 'http';
-					if (req.headers['x-forwarded-proto'] == 'https') {
-						protocol = 'https';
-					}
-
-					var body = 'Click here to change your password: \n '+ protocol +'://'+ req.headers.host + '/#!login/changepassword/' + user.secret;
-
-					// Send an email
-					postmark.send({
-						'From': 'support@brycecanyonhalfmarathon.com',
-						'To': user.email,
-						'Subject': 'Password Change Request',
-						'TextBody': body
-			    });
-
-					res.send(200);
-				});
-			}
-		});
 	});
 
 
 	/**
-	 * Change Password only when user is found by the passed-in secret.
+	 * Pass in a secret and password to change a user's password.
 	 */
-	app.post('/api/changepassword', function(req, res){
+	app.post('/api/passwordchange', function(req, res){
 
-		if (req.body.password !== req.body.confirmpassword) {
+		if (!req.body.secret) {
 			return res.json({
-				error: 'The passwords must match'
+				status: 'missing secret',
+				message: 'Please include the secret to look up the correct user.'
 			});
 		}
 
-		var params = {
-			query:{
-				secret:req.body.secret
-			}
-		};
+		if (!req.body.password || !req.body.password2) {
+			return res.json({
+				status: 'missing password',
+				message: 'Please include the password and matching password2 to change the password.'
+			});
+		}
 
-		var User = app.lookup('api/users');
+		if (req.body.password !== req.body.password2) {
+			return res.json({
+				status: 'password mismatch',
+				message: 'The passwords must match'
+			});
+		}
 
-		User.find(params, function(error, users){
+		var User = mongoose.models.User;
 
-			// If no user was found, the code was bad.
-			if (!users[0]) {
-				return res.json({
-					error: 'That code has expired, please use the change password option again.'
-				});
-
-			// A user was found, so update the password.
-			} else {
-				var user = users[0].toObject();
+		User.findOne({secret:req.body.secret}, '', {}, function(err, user){
+			// Mongoose Errors
+			if (err) {
+				winston.log(err);
+				return res.json('401', err);
+			// A user was found, save the password.
+			} else if (user) {
 
 				user.password = req.body.password;
+				user.secret = undefined;
 
-				User.update(user.id, user, {}, function(err, user){
-					console.log(user);
+				user.save(function(err, data){
+					// ...and send the token to the user.
+          var token = exports.generateToken(user);
+		      return res.json(token);
+				});
+
+			// Couldn't find the user using the passed code
+			} else {
+				res.json({
+					status: 'invalid code',
+					message: 'We could not find a user using that code.'
 				});
 			}
 		});
 	});
+
 
 
 };

@@ -3,7 +3,9 @@
 {{#if isLoggedIn}}
 	<p>You have {{secrets.length}} secrets</p>
 	<p>You have {{todos.length}} things to do.</p>
+{{else}}
+	<p>There is some private information hidden here.</p>
+	<h4>To see private information, please {{linkTo 'login'}}</h4>
 {{/if}}
-
-<h3>This page contains all sorts of information that is available to the public.</h3>
-<h4>To see private information, please {{linkTo 'login'}}</h4>
+<br/>
+<h3>This sentence is public information.  <br/><br/>This page can include all sorts of cool, public stuff about your company.</h3>

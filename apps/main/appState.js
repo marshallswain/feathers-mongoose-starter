@@ -7,22 +7,19 @@ import  {Secret} from './models.js';
 // Defines the state of the application
 var AppState = can.Map.extend({
 	define : {
-		todos: {
-			serialize: false
-		},
-		secrets: {
-			serialize: false
-		},
+		todos: {serialize: false },
+		secrets: {serialize: false },
+		tickets: {serialize: false },
 		session : {
 			serialize: false,
 			set() {
-				// When there is a session, start routing.
-				can.route.map(appState);
+				// When there is a session, start the websockets.
 				can.Feathers.connect('', {query: 'token=' + localStorage.getItem('featherstoken'), transports: ['websocket', 'xhr-polling'] });
 
 				// Fetch the user's data
 				this.attr('todos', new Todo.List({}));
 				this.attr('secrets', new Secret.List({}));
+
 
 			},
 			remove() {
@@ -51,9 +48,16 @@ var AppState = can.Map.extend({
 				if( this.attr('session') ) {
 					return this.attr('page');
 				} else if(this.attr('ready')){
-					// Allow the home page or login page without a session.
-					if (can.route.attr('page') == 'home') {
-						return 'home';
+					// Only certain pages allowed when not logged in.
+					var allowed = [
+						'home',
+						'signup',
+						'verify',
+						'passwordemail',
+						'passwordchange'
+					];
+					if (can.inArray(can.route.attr('page'), allowed) >= 0) {
+						return can.route.attr('page');
 					} else {
 						return 'login';
 					}
@@ -77,3 +81,4 @@ Todo.bind('created', function(ev, todo){
 	}
 });
 
+can.route.map(appState);
