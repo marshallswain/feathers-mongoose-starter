@@ -1,6 +1,5 @@
 // We need a token to fully hook up the websocket, so we use a PublicUser
 import {PublicUser} from '../../../models.js';
-import Session from '../../../models/session';
 import './signup.css';
 
 can.Component.extend({
