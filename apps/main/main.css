@@ -1,0 +1,13 @@
+input.form-control.top{
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+	border-bottom:0;
+}
+input.form-control.bottom{
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.well h1:first-child, .well h2:first-child, .well h3:first-child, .well h4:first-child{
+	margin-top:0 !important;
+}

@@ -1,0 +1,26 @@
+<div class="col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3">
+  <h2>Login</h2>
+  <p>Enter your email and password</p>
+
+  <div id="email-login-error"></div>
+
+  <form role="form" can-submit="login">
+
+    <input type="text" class="form-control top" placeholder="Email" required autofocus="" can-value="email"/>
+    <input type="password" class="form-control bottom" placeholder="Password" required can-value="password"/>
+
+    <div class="signup-messages bg-danger">
+      {{#if notVerified}}
+        <p>That account has not been verified.  Please check your email and click the verification link.</p>
+      {{/if}}
+      {{#if invalidLogin}}
+        <p>Email address or password incorrect. <button class="btn btn-link" can-click="resetPassword">Reset Password</button></p>
+      {{/if}}
+    </div>
+
+    <br/>
+
+    <button class="btn btn-lg btn-success btn-block" type="submit">Sign in</button>
+    <a href="{{hrefTo 'signup'}}" class="btn btn-block btn-link cancel" type="button">No account? Get signed up</a>
+  </form>
+</div>

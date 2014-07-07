@@ -1,0 +1,23 @@
+<h2>Support</h2>
+
+
+<h4>We'd like you to think that we have award-winning support personnel.  Thank you!</h4>
+
+<p>This page shows an example of a separate Support Application.  <br/>Auth / Login is shared between the apps.</p>
+<br/>
+<h3>My Support Tickets</h3>
+
+{{#if isLoggedIn}}
+	{{#if tickets.length}}
+		<p>You have {{tickets.length}} tickets</p>
+		<ul>
+		{{#each tickets}}
+			<li>{{status}} - {{body}}</li>
+		{{/each}}
+		</ul>
+	{{else}}
+		<p>You have no tickets.</p>
+	{{/if}}
+{{else}}
+	<h4>Please {{linkTo 'login'}} to see your support tickets.</h4>
+{{/if}}

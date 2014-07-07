@@ -1,0 +1,11 @@
+<h2>Welcome to the home page.</h2>
+
+{{#if isLoggedIn}}
+	<p>You have {{secrets.length}} secrets</p>
+	<p>You have {{todos.length}} things to do.</p>
+{{else}}
+	<p>There is some private information hidden here.</p>
+	<h4>To see private information, please {{linkTo 'login'}}</h4>
+{{/if}}
+<br/>
+<h3>This sentence is public information.  <br/><br/>This page can include all sorts of cool, public stuff about your company.</h3>
