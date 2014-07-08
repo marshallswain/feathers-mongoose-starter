@@ -323,6 +323,10 @@ exports.setup = function(app, feathers){
 							'To': user.email,
 							'Subject': 'Password Change Request',
 							'TextBody': body
+				    }, function(error, success) {
+			        if(error) {
+								winston.log('Unable to send via postmark: ' + error.message);
+			        }
 				    });
 
 						return res.json('success');

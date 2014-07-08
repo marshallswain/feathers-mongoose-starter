@@ -184,7 +184,7 @@ exports.sendVerificationEmail = function(hook, next){
       'TextBody': body
     }, function(error, success) {
       if(error) {
-        console.error('Unable to send via postmark: ' + error.message);
+        winston.log('Unable to send via postmark: ' + error.message);
       }
     });
 
