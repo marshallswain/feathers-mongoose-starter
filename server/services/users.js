@@ -1,3 +1,5 @@
+'use strict';
+
 var mongoose = require('mongoose'),
   ObjectId = mongoose.Schema.Types.ObjectId,
   MongooseService = require('feathers-mongoose-advanced'),
@@ -64,7 +66,7 @@ module.exports = function(app){
     create: hooks.requireAdminToSetAdmin,
     get:    hooks.requireAuth,
     update: hooks.requireAuth,
-    remove: hooks.requireAuth
+    remove: hooks.stop
   });
 
   service.before({
