@@ -1,6 +1,8 @@
 'use strict';
 
 import Session from '../../../models/session';
+import appState from '../../../appState.js';
+import {User} from '../../../models.js';
 
 can.Component.extend({
 	tag: 'sc-login',
@@ -21,12 +23,13 @@ can.Component.extend({
 				password: this.attr('password')
 			}).save(
 				(session) => {
-					can.route.attr({
-						session :session,
+					appState.attr({
+						session : new User(session.attr()),
 						loggingIn: false
 					});
-					can.route.attr('page', 'home');
+					can.route.attr('page', 'register');
 				}, (error) => {
+					console.log(error);
 					switch(error.status){
 						case 'not verified':
 							winston.log('invalid login', self.attr('email') + ' tried to login without verifying the account first.');
