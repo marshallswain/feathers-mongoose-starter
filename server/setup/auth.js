@@ -14,12 +14,12 @@ var bcrypt = require('bcrypt'),
 	mongoose = require('mongoose'),
 	winston = require('winston'),
 	mandrill = require('mandrill-api'),
-	mandrill_client = new mandrill.Mandrill('');
+	mandrill_client = new mandrill.Mandrill('FxHklmda9Og4tRDsTTFg7A');
 
 /**
  * The secret that will be used to encode / decode tokens.
  */
-var tokenSecret = 'igottasecret';
+var tokenSecret = 'A7gF2TTsDRt4gO97admlkHxF1';
 
 
 /**
@@ -28,11 +28,11 @@ var tokenSecret = 'igottasecret';
 exports.decodeToken = function(token, cb){
 	try{
 	  var data = jwt.decode(token, tokenSecret);
-	  cb(null, data);
+	  return cb(null, data);
 	}
 	catch(e){
 		winston.log('auth.js line ~34 decodeToken error: ~~~~~~~' + e);
-		cb(e, null);
+		return cb(e, null);
 	}
 };
 
@@ -42,11 +42,13 @@ exports.decodeToken = function(token, cb){
  */
 var getToken = function(req, res, next){
 	if (req.headers.authorization) {
+		console.log('1');
 		exports.decodeToken(req.headers.authorization, function(err, data){
 			if (err) {
 				console.log(err);
+				return;
 			} else if (data.email) {
-				User.findOne({email:data.email}, function(err, user){
+				mongoose.models.User.findOne({email:data.email}, function(err, user){
 					// Mongoose Errors
 					if (err) {
 						winston.log(err);
@@ -54,13 +56,13 @@ var getToken = function(req, res, next){
 					// A user was found, save the password.
 					} else if (user) {
 						req.feathers.user = user.toObject();
-						next(null, req, res);
+						return next(null, req, res);
 					}
 				});
 			}
 		});
 	} else {
-		next(null, req, res);
+		return next(null, req, res);
 	}
 };
 
@@ -69,7 +71,9 @@ var getToken = function(req, res, next){
  * Can then be used in hooks
  */
 var setHeaders = function(req, res, next){
-	req.feathers.headers = req.headers;
+	req.feathers = {
+		headers: req.headers
+	}
 	next(null, req, res);
 };
 
@@ -150,8 +154,8 @@ exports.setup = function(app, feathers){
           var message = {
             'text': body,
             'subject': 'Verify Email Address',
-            'from_email': '',
-            'from_name': '',
+            'from_email': 'support@mymoneyanywhere.com',
+            'from_name': 'My Money Anywhere Support',
             'to': [{
                     'email': user.email,
                     'type': 'to'
@@ -160,9 +164,9 @@ exports.setup = function(app, feathers){
             'tags': [
               'email-verify'
             ],
-            'subaccount': '',
+            'subaccount': 'mma',
             'metadata': {
-                'website': 'www.lookihaveawebsite.com'
+                'website': 'www.mymoneyanywhere.com'
             },
             'recipient_metadata': [{
               'rcpt': user.email,
@@ -180,7 +184,7 @@ exports.setup = function(app, feathers){
 
           }, function(e) {
             // Mandrill returns the error as an object with name and message keys
-            console.log('A mandrill error occurred: ' + e.name + ' - ' + e.message);
+            winston.log('A mandrill error occurred: ' + e.name + ' - ' + e.message);
             // A mandrill error occurred: Unknown_Subaccount - No subaccount exists with the id 'customer-123'
             res.json({
             	status:'not verified',
@@ -354,8 +358,8 @@ exports.setup = function(app, feathers){
 						var message = {
 	            'text': body,
 	            'subject': 'Password Change Request',
-	            'from_email': '',
-	            'from_name': '',
+	            'from_email': 'support@mymoneyanywhere.com',
+	            'from_name': 'My Money Anywhere Support',
 	            'to': [{
 	                    'email': user.email,
 	                    'type': 'to'
@@ -364,9 +368,9 @@ exports.setup = function(app, feathers){
 	            'tags': [
 	                'change-password'
 	            ],
-	            'subaccount': '',
+	            'subaccount': 'mma',
 	            'metadata': {
-	                'website': 'www.lookihaveawebsite.com'
+	                'website': 'www.mymoneyanywhere.com'
 	            },
 	            'recipient_metadata': [{
                 'rcpt': user.email,
@@ -380,7 +384,7 @@ exports.setup = function(app, feathers){
 							return res.json('success');
 	          }, function(e) {
               // Mandrill returns the error as an object with name and message keys
-              console.log('A mandrill error occurred: ' + e.name + ' - ' + e.message);
+              winston.log('A mandrill error occurred: ' + e.name + ' - ' + e.message);
               // A mandrill error occurred: Unknown_Subaccount - No subaccount exists with the id 'customer-123'
 							return res.json('success');
 	          });
