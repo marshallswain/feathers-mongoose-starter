@@ -101,7 +101,7 @@ exports.setup = function(app, feathers){
 
 	// All REST routes will set up req.feathers.user if a token is passed.
 	app.all('*', setHeaders);
-	app.post('*', getToken);
+	app.all('*', getToken);
 
 
 	/**
