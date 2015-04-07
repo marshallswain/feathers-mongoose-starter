@@ -14,7 +14,8 @@ var bcrypt = require('bcrypt'),
 
 var errors = require('feathers').errors.types,
   randomString = require('random-string'),
-  postmark = require('postmark')('postmark-key-here');
+  mandrill = require('mandrill-api'),
+  mandrill_client = new mandrill.Mandrill('');
 
 
 /**
@@ -30,6 +31,16 @@ exports.requireAuth = function (hook, next) {
   }
 
   return next(null, hook);
+};
+
+
+/**
+ * Stop
+ *
+ * find, get, create, update, remove
+ */
+exports.stop = function (hook, next) {
+  return next(new errors.Forbidden('Safety check. We just stopped you from blowing things up.'));
 };
 
 
@@ -176,16 +187,34 @@ exports.sendVerificationEmail = function(hook, next){
     '\n\n or go to this page: '+ url +
     '\n\n and enter this code: ' + hook.data.secret;
 
-    // Send an email
-    postmark.send({
-      'From': 'xxx',
-      'To': hook.data.email,
-      'Subject': 'Verify Your Email Address',
-      'TextBody': body
-    }, function(error, success) {
-      if(error) {
-        console.error('Unable to send via postmark: ' + error.message);
-      }
+    var message = {
+      'text': body,
+      'subject': 'Verify Your Email Address',
+      'from_email': '',
+      'from_name': '',
+      'to': [{
+              'email': hook.data.email,
+              'type': 'to'
+          }],
+      'important': true,
+      'tags': [
+          'account-verify'
+      ],
+      'subaccount': '',
+      'metadata': {
+          'website': 'www.lookihaveawebsite.com'
+      },
+      'recipient_metadata': [{
+        'rcpt': hook.data.email
+      }]
+    };
+
+    mandrill_client.messages.send({'message': message, 'async': true}, function(result) {
+
+    }, function(e) {
+      // Mandrill returns the error as an object with name and message keys
+      console.log('A mandrill error occurred: ' + e.name + ' - ' + e.message);
+      // A mandrill error occurred: Unknown_Subaccount - No subaccount exists with the id 'customer-123'
     });
 
   }
@@ -194,3 +223,15 @@ exports.sendVerificationEmail = function(hook, next){
 };
 
 
+/**
+ * Log a hook to the console for debugging.
+ * before or after
+ *
+ * find, get, create, update, delete
+ */
+exports.log = function(hook, next){
+
+  console.log(hook);
+
+  return next();
+};

@@ -32,8 +32,6 @@ var AppState = can.Map.extend({
 
 				// can.route._teardown();
 				localStorage.removeItem('featherstoken');
-
-				location.reload();
 			}
 		},
 		isLoggedIn: {
@@ -66,8 +64,7 @@ var AppState = can.Map.extend({
 		}
 	},
 	logout() {
-		var self = this;
-		this.attr('session').destroy( function(test) {self.removeAttr('session'); });
+		this.removeAttr('session');
 	}
 });
 

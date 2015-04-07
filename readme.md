@@ -10,7 +10,7 @@
  * **winston** logging on both the client and server. Ready to log to console, email, and MongoDB. - https://github.com/flatiron/winston
  * **MongoDB and Mongoose** for the database.
  * User Signup & simple token auth out of the box.
- * **Postmark** for sending signup emails. - http://postmarkapp.com
+ * **Mandrill** for sending signup emails. - https://mandrillapp.com
  * The build system:
 	* **Gulp.js** - http://gulpjs.com/
 	* **Webpack** flexible, es6-compatible module bundler - http://webpack.github.io/
@@ -22,8 +22,8 @@
 	* **server.js** - Set up the database uri and server port number.
 	* **webpack.config.js** - Set up the entry point and output folders for your apps.
 	* **gulpfile.js** - Set up can-compile and gulp tasks.
-	* **server/setup/auth.js** - Customize the tokenSecret that will be used to hash auth tokens.  Also setup the Postmark API Key and setup the Postmark send data with your email addresses.
-	* **server/hook-library.js** - Update the Postmark API Key and setup the Postmark.send data.
+	* **server/setup/auth.js** - Customize the tokenSecret that will be used to hash auth tokens.  Also setup the Mandrill API Key and message data.
+	* **server/hook-library.js** - Update the Mandrill API Key and message data.
 	* **winston.js** - Set up logging.
 2. Install Modules -
 	* Run **bower install** In the public directory.
